@@ -29,6 +29,11 @@ app.use(async function(req, res, next){
             success: false,
             message: "HEAD method not supported"
         })
+    } else if (process.env.USE_AUTH_KEY == "true" && process.env.AUTH_KEY != req.headers.authorization) {
+        return res.status(401).json({
+            success: true,
+            message: "authorization header required"
+        })
     }
 
     return next()
