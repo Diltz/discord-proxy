@@ -4,7 +4,7 @@
 const express = require("express")
 const dotenv = require("dotenv")
 const helmet = require("helmet")
-const axios = require("axios")
+const request = require("request")
 
 //
 
@@ -44,26 +44,41 @@ app.use(async function(req, res, next){
 app.all("*", async function(req, res) {
     //console.log("https://discord.com" + req.url)
 
-    if (req.method == "GET") {
-        data = await axios({
-            url: "https://discord.com" + req.url,
-            method: "get",
-            headers: {
-                "content-type": "application/json"
-            },
-        })
-    } else {
-        data = await axios({
-            url: "https://discord.com" + req.url,
-            method: req.method,
-            headers: {
-                "content-type": "application/json"
-            },
-            body: req.body
-        })
+    // headers modify
+
+    req.headers["user-agent"] = "discord-proxy"
+
+    delete req.headers.authorization
+    delete req.headers.host
+    delete req.headers.connection
+
+    //
+
+    var options = {
+        method: req.method,
+        headers: req.headers
     }
 
-    return res.status(data.status).json(data.data)
+    console.log(req.body)
+
+    if (req.body[0]) {
+        options.body = req.body
+    }
+
+    console.log(options.body)
+
+    request('https://discord.com' + req.url, options, (error, response, body) => {
+        if (error) {
+            console.error(error)
+
+            return res.status(500).json({
+                success: false,
+                message: error
+            })
+        }
+
+        res.status(response.statusCode).json(JSON.parse(body))
+    })
 })
 
 // init app
